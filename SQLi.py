@@ -1,0 +1,228 @@
+from flask import Flask, session, render_template, request, redirect, url_for, flash
+
+app = Flask(__name__)
+app.secret_key = "your_secret_key"
+
+scenarios = {
+    1: {
+        "title": "Boolean SQLi – Login Bypass",
+        "vuln_code": """
+Explanation: This scenario demonstrates a **login authentication bypass** vulnerability.
+Because the SQL query is constructed by directly concatenating the username and password,
+an attacker can supply malicious input (e.g., ' OR '1'='1) to bypass the authentication
+check entirely. If successful, the attacker can log in without valid credentials,
+potentially gaining unauthorized access.
+
+Compromised SQL Code:
+query = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + password + "'"
+""",
+        "hints": [
+            "SELECT * FROM users WHERE username = %s AND password = %s",
+            "\"SELECT * FROM users WHERE username = %s AND password = %s\",\n(username, password)",
+            "\"SELECT * FROM users WHERE username = %s AND password = %s\",\n(username, password)"
+        ],
+        "solution": (
+            '"SELECT * FROM users WHERE username = %s AND password = %s",\n'
+            '(username, password)'
+        )
+    },
+    2: {
+        "title": "Boolean SQLi – Product Filter",
+        "vuln_code": """
+Explanation: An attacker can manipulate the category filter by injecting ' OR '1'='1
+to view all products. Even if the app doesn't show errors, changes in product listing
+can be used to infer true/false conditions.
+
+Compromised SQL Code:
+sql = "SELECT * FROM items WHERE category = '" + user_input + "'"
+""",
+        "hints": [
+            "SELECT * FROM items WHERE category = %s",
+            "\"SELECT * FROM items WHERE category = %s\",\n(user_input,)",
+            "\"SELECT * FROM items WHERE category = %s\",\n(user_input,)"
+        ],
+        "solution": (
+            '"SELECT * FROM items WHERE category = %s",\n'
+            '(user_input,)'
+        )
+    },
+    3: {
+        "title": "Boolean SQLi – Profile Viewer",
+        "vuln_code": """
+Explanation: An attacker can guess valid user_ids via Boolean logic (e.g., id = 1 OR 1=1).
+The change in profile data helps them deduce the correct condition.
+
+Compromised SQL Code:
+user_id = "1 OR 1=1"
+profile = db.query("SELECT * FROM users WHERE id = " + user_id)
+""",
+        "hints": [
+            "SELECT * FROM users WHERE id = %s",
+            "\"SELECT * FROM users WHERE id = %s\",\n(user_id,)",
+            "\"SELECT * FROM users WHERE id = %s\",\n(user_id,)"
+        ],
+        "solution": (
+            '"SELECT * FROM users WHERE id = %s",\n'
+            '(user_id,)'
+        )
+    },
+    4: {
+        "title": "Time-Based SQLi – Delay by Payload",
+        "vuln_code": """
+Explanation: Time-based payloads like ' OR IF(1=1, SLEEP(5), 0)--' delay the response
+and confirm if the condition is TRUE. The server doesn't return errors or data, but
+the delay exposes vulnerabilities.
+
+Compromised SQL Code:
+name = "admin"
+query = "SELECT * FROM accounts WHERE name = '" + name + "'"
+""",
+        "hints": [
+            "SELECT * FROM accounts WHERE name = %s",
+            "\"SELECT * FROM accounts WHERE name = %s\",\n(name,)",
+            "\"SELECT * FROM accounts WHERE name = %s\",\n(name,)"
+        ],
+        "solution": (
+            '"SELECT * FROM accounts WHERE name = %s",\n'
+            '(name,)'
+        )
+    },
+    5: {
+        "title": "Time-Based SQLi – Infer Email Existence",
+        "vuln_code": """
+Explanation: By checking response delay on crafted inputs, attackers can infer whether
+an email exists in the database (e.g., IF(email='known@example.com', SLEEP(5), 0)).
+
+Compromised SQL Code:
+email = "known@example.com"
+query = "SELECT * FROM subscribers WHERE email = '" + email + "'"
+""",
+        "hints": [
+            "SELECT * FROM subscribers WHERE email = %s",
+            "\"SELECT * FROM subscribers WHERE email = %s\",\n(email,)",
+            "\"SELECT * FROM subscribers WHERE email = %s\",\n(email,)"
+        ],
+        "solution": (
+            '"SELECT * FROM subscribers WHERE email = %s",\n'
+            '(email,)'
+        )
+    },
+    6: {
+        "title": "Time-Based SQLi – Extract Password Length",
+        "vuln_code": """
+Explanation: Attackers can guess password length using delays: IF(LENGTH(password)=6, SLEEP(5), 0).
+If the response delays, they know it's 6. This works even without data leaks.
+
+Compromised SQL Code:
+input_value = "admin"
+query = "SELECT * FROM users WHERE username = '" + input_value + "'"
+""",
+        "hints": [
+            "SELECT * FROM users WHERE username = %s",
+            "\"SELECT * FROM users WHERE username = %s\",\n(input_value,)",
+            "\"SELECT * FROM users WHERE username = %s\",\n(input_value,)"
+        ],
+        "solution": (
+            '"SELECT * FROM users WHERE username = %s",\n'
+            '(input_value,)'
+        )
+    }
+}
+
+
+def safe_solution_match(user_input, expected):
+    return "%s" in user_input and "(" in user_input and ")" in user_input
+
+@app.route('/')
+def blindsqli_lesson():
+    # First page shown: Blind SQL Injection interactive lesson
+    return render_template('blindsqli.html')
+
+@app.route('/intro')
+def intro_page():
+    # After Blind SQLi lesson, this is shown
+    return render_template('intro.html')
+
+@app.route('/start')
+def start_training():
+    # When "Start Training" button is clicked, reset session and go to scenario 1
+    session.update(current_attack=1, attempts_left=3, score=0, fails=0)
+    return redirect(url_for('play_attack', attack_id=1))
+
+@app.route('/attack/<int:attack_id>', methods=['GET', 'POST'])
+def play_attack(attack_id):
+    if attack_id not in scenarios:
+        return redirect(url_for('final_score'))
+
+    scenario = scenarios[attack_id]
+
+    # Prepare stub
+    vuln_stub = "-- Type your fixed, parameterized SQL here\n\n"
+    if attack_id == 1:
+        vuln_stub += "cursor.execute(\n    \"Write your code...\",\n    (username, password)\n)"
+    elif attack_id == 2:
+        vuln_stub += "cursor.execute(\n    \"Write your code...\",\n    (user_input,)\n)"
+    elif attack_id == 3:
+        vuln_stub += "profile = cursor.execute(\n    \"Write your code...\",\n    (user_id,)\n).fetchone()"
+    elif attack_id == 4:
+        vuln_stub += "cursor.execute(\n    \"Write your code...\",\n    (name,)\n)"
+    elif attack_id == 5:
+        vuln_stub += "cursor.execute(\n    \"Write your code...\",\n    (email,)\n)"
+    elif attack_id == 6:
+        vuln_stub += "cursor.execute(\n    \"Write your code...\",\n    (input_value,)\n)"
+
+    if request.method == 'GET':
+        session.pop('_flashes', None)
+
+    if request.method == 'POST':
+        user_fix = request.form.get('fix_input', '').strip()
+        correct = scenario['solution']
+
+        if user_fix == correct or safe_solution_match(user_fix, correct):
+            session['score'] += 1
+            next_id = attack_id + 1
+            session['current_attack'] = next_id
+            session['attempts_left'] = 3
+            return render_template(
+                'show_solution.html',
+                title=scenario['title'],
+                user_fix=user_fix,
+                correct=correct,
+                next_id=next_id,
+                success_message="✅ Good job! It's the correct SQL code!"
+            )
+        else:
+            session['attempts_left'] -= 1
+            if session['attempts_left'] == 0:
+                session['fails'] += 1
+                next_id = attack_id + 1
+                session['current_attack'] = next_id
+                session['attempts_left'] = 3
+                return render_template(
+                    'show_solution.html',
+                    title=scenario['title'],
+                    user_fix=user_fix,
+                    correct=correct,
+                    next_id=next_id,
+                    success_message="❌ Attempts exhausted. Here's the correct solution."
+                )
+            flash(f"❗ Not fixed yet. ({session['attempts_left']} attempts left)", "error")
+
+    return render_template(
+        'scenario.html',
+        title=scenario['title'],
+        vuln_code=scenario['vuln_code'],
+        hints=scenario['hints'],
+        attempts=session['attempts_left'],
+        meter=session['fails'],
+        stub_code=vuln_stub
+    )
+
+@app.route('/final')
+def final_score():
+    return render_template('final.html',
+                           score=session.get('score', 0),
+                           total=len(scenarios))
+
+if __name__ == '__main__':
+    app.run('0.0.0.0',debug=True)

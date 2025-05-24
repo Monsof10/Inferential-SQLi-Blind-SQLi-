@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>SQL Injection Tutorial</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/6.65.7/codemirror.min.css" />
+  <style>
+    /* Base page & text */
+    body {
+      background-color: #151B3B;    /* primary background */
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;                  /* primary text */
+      margin: 0;
+      padding: 0;
+      font-size: 115%;              /* slightly larger base text */
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 30px;
+    }
+    .title {
+      font-size: 28px;
+      color: #5DADE2;               /* accent blue */
+      margin-bottom: 30px;
+    }
+    .scenario-area {
+      display: flex;
+      width: 100%;
+      gap: 30px;
+    }
+    .left-pane {
+      flex: 1;
+    }
+    /* --- Reworked Attack Scenario details box --- */
+    .code-box {
+      background: #1a2147;          /* secondary background */
+      border: 2px solid #5DADE2;    /* border blue */
+      border-radius: 8px;
+      margin-bottom: 25px;
+      padding: 25px;                /* increased padding */
+      line-height: 1.6;             /* better readability */
+      overflow-wrap: break-word;
+    }
+    .code-box h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+      color: #F1C40F;               /* warning yellow */
+      font-size: 20px;
+    }
+    .code-box p {
+      margin: 0;
+      white-space: pre-wrap;        /* preserve line breaks */
+      color: #fff;
+    }
+    /* Hints box unchanged */
+    .hints-box {
+      background: #1a2147;
+      border: 2px solid #5DADE2;
+      border-radius: 80px;
+      padding: 40px 25px;
+      position: relative;
+    }
+    .hints-title {
+      color: #F1C40F;
+      font-size: 32px;
+      text-align: center;
+      margin: -30px 0 25px;
+      position: relative;
+      z-index: 1;
+      background: #1a2147;
+      display: inline-block;
+      padding: 0 25px;
+    }
+    .hint-text {
+      color: #F1C40F;
+      margin: 25px 0 10px 0;
+      font-size: 20px;
+    }
+    .example-snippet {
+      background: #151B3B;
+      border: 2px solid #5DADE2;
+      padding: 10px;
+      margin: 0 0 14px 0;
+      font-family: monospace;
+      white-space: pre-wrap;
+      color: #fff;
+      font-size: 1em;
+    }
+    /* Buttons */
+    .hint-button,
+    .submit-button {
+      background-color: #5DADE2;
+      border: 2px solid #5DADE2;
+      color: #fff;
+      padding: 12px 24px;
+      font-size: 1em;
+      cursor: pointer;
+      border-radius: 6px;
+      margin: 25px auto 0;
+      display: block;
+    }
+    .hint-button:hover,
+    .submit-button:hover {
+      background-color: #4AA7D6;
+      border-color: #4AA7D6;
+    }
+    .right-pane {
+      flex: 1.3;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    .editor {
+      height: 350px;
+      border: 2px solid #5DADE2;
+      border-radius: 6px;
+      background: #151B3B;
+      color: #fff;
+      font-family: monospace;
+      font-size: 15px;
+      padding: 5px;
+    }
+    .meter {
+      background: #1a2147;
+      border: 2px solid #5DADE2;
+      height: 35px;
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .meter-fill {
+      height: 100%;
+      background-color: #F1C40F;
+      width: 0%;
+      transition: width 0.5s;
+    }
+    .messages p {
+      font-size: 15px;
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="title">{{ title }}</div>
+    <div class="scenario-area">
+
+      <!-- Left column -->
+      <div class="left-pane">
+
+        <!-- Neatly organized Attack Scenario details -->
+        <div class="code-box">
+          <h3>Attack Scenario details:</h3>
+          <p>{{ vuln_code }}</p>
+        </div>
+
+        <!-- Hints section -->
+        <div class="hints-box">
+          <div class="hints-title">Hints</div>
+          <div id="hintDisplay"></div>
+          <button class="hint-button" onclick="getHint()">Show Hint</button>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div class="right-pane">
+        <div id="editor" class="editor"></div>
+        <form method="POST" id="fixForm">
+          <input type="hidden" name="fix_input" id="fix_input">
+          <button type="submit" class="submit-button">Submit Fix</button>
+        </form>
+        <div class="meter">
+          <div class="meter-fill" style="width: {{ meter * 16 }}%;"></div>
+        </div>
+        <div class="messages">
+          {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+              {% for category, message in messages %}
+                <p style="color:
+                    {% if category=='success' %}#5DADE2
+                    {% elif category=='error'   %}#F1C40F
+                    {% else                       %}#fff{% endif %};">
+                  {{ message }}
+                </p>
+              {% endfor %}
+            {% endif %}
+          {% endwith %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script type="module">
+    import { EditorState } from "https://esm.sh/@codemirror/state";
+    import { EditorView, keymap, highlightActiveLine } from "https://esm.sh/@codemirror/view";
+    import { defaultKeymap } from "https://esm.sh/@codemirror/commands";
+    import { sql } from "https://esm.sh/@codemirror/lang-sql";
+
+    const promptText = {{ stub_code|tojson }};
+    const startState = EditorState.create({
+      doc: promptText,
+      selection: { anchor: promptText.length },
+      extensions: [
+        keymap.of(defaultKeymap),
+        sql(),
+        highlightActiveLine(),
+        EditorView.lineWrapping
+      ]
+    });
+    const view = new EditorView({
+      state: startState,
+      parent: document.getElementById("editor")
+    });
+
+    const snippets = {{ hints|tojson }};
+    let hintIndex = 0;
+
+    window.getHint = () => {
+      if (hintIndex < snippets.length) {
+        const hd = document.getElementById("hintDisplay");
+        const t = document.createElement("div");
+        t.className = "hint-text";
+        t.textContent = `Hint ${hintIndex+1}: ${snippets[hintIndex]}`;
+        hd.appendChild(t);
+        const ex = document.createElement("div");
+        ex.className = "example-snippet";
+        ex.textContent = snippets[hintIndex];
+        hd.appendChild(ex);
+        hintIndex++;
+      }
+    };
+
+    view.dom.addEventListener("keydown", e => {
+      if (e.key === "Enter" && (e.ctrlKey||e.metaKey)) {
+        e.preventDefault();
+        document.getElementById("fix_input").value = view.state.doc.toString();
+        document.getElementById("fixForm").submit();
+      }
+    });
+
+    document.querySelector(".submit-button").addEventListener("click", () => {
+      document.getElementById("fix_input").value = view.state.doc.toString();
+    });
+  </script>
+</body>
+</html>

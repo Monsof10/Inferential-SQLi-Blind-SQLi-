@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Introduction to SQL Injection Training</title>
+  <style>
+    body {
+      background-color: #151B3B;    /* primary background */
+      font-family: 'Segoe UI', sans-serif;
+      color: #fff;                  /* primary text */
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 960px;
+      margin: 40px auto;
+      padding: 30px;
+      background-color: #1a2147;    /* secondary background */
+      border-radius: 10px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.5);
+      border: 2px solid #5DADE2;    /* border blue */
+      text-align: center;
+    }
+    .intro-image {
+      display: block;
+      margin: 0 auto 20px;
+      max-width: 200px;
+      /* you can adjust size as needed */
+    }
+    h1 {
+      color: #5DADE2;               /* accent blue */
+      font-size: 2.5em;
+      margin-bottom: 20px;
+    }
+    h2 {
+      color: #5DADE2;               /* accent blue */
+      margin-bottom: 10px;
+      font-size: 1.8em;
+      text-align: left;
+    }
+    p {
+      line-height: 1.7;
+      font-size: 1.1em;
+      margin-bottom: 20px;
+      color: #888;                  /* secondary text */
+      text-align: left;
+    }
+    .start-button {
+      display: inline-block;
+      margin-top: 30px;
+      background-color: #5DADE2;    /* accent blue */
+      color: #fff;
+      font-size: 18px;
+      padding: 12px 30px;
+      border-radius: 6px;
+      text-decoration: none;
+      text-align: center;
+      border: 2px solid #5DADE2;    /* border blue */
+      transition: background-color 0.3s;
+    }
+    .start-button:hover {
+      background-color: #4AA7D6;    /* slightly darker accent */
+      border-color: #4AA7D6;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <!-- Centered transparent SVG/PNG -->
+    <img src="{{ url_for('static', filename='img/sql-injection.png') }}"
+         alt="SQL Injection"
+         class="intro-image">
+
+    <h1>Welcome to SQL Injection Training</h1>
+
+    <h2>Understand the Threat</h2>
+    <p>
+      SQL injection is one of the most dangerous and common vulnerabilities found in web applications.
+      By exploiting insecure SQL queries, attackers can bypass authentication, access confidential data,
+      or manipulate your entire database.
+    </p>
+
+    <h2>What You'll Learn</h2>
+    <p>
+      In this training, you’ll face real-world scenarios where you must identify and fix vulnerabilities.
+      You'll practice using parameterized queries, input validation, and best practices
+      to protect your application from attacks.
+    </p>
+
+    <h2>Get Ready to Secure Your Code</h2>
+    <p>
+      Whether you're a beginner or an experienced developer, this hands-on training
+      is designed to strengthen your security skills and give you confidence against SQL injection threats.
+    </p>
+
+    <a href="{{ url_for('start_training') }}" class="start-button">
+      Start Training
+    </a>
+  </div>
+
+</body>
+</html>

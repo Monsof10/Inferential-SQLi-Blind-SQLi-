@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title }} – Solution Revealed</title>
+  <style>
+    /* Base */
+    body {
+      background: #151B3B;        /* primary background */
+      color: #fff;                /* primary text */
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 40px;
+      display: flex;
+      justify-content: center;
+    }
+    .wrapper {
+      width: 100%;
+      max-width: 800px;
+    }
+    h1 {
+      margin-bottom: 20px;
+      font-size: 2em;
+      border-bottom: 2px solid #5DADE2; /* accent border */
+      padding-bottom: 10px;
+    }
+
+    /* Success / Warning */
+    .success-message {
+      background: #1a2147;        /* secondary background */
+      border-left: 4px solid #5DADE2; /* accent border */
+      padding: 15px 20px;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+      color: #5DADE2;             /* accent blue */
+    }
+    .warning {
+      color: #F1C40F;             /* warning yellow */
+    }
+
+    /* Card */
+    .card {
+      background: #1a2147;        /* secondary background */
+      border: 2px solid #5DADE2;  /* border blue */
+      border-radius: 8px;
+      margin-bottom: 30px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .card h3 {
+      margin: 0;
+      background: #151B3B;        /* primary bg */
+      padding: 15px 20px;
+      font-size: 1.2em;
+      border-bottom: 1px solid #5DADE2;
+    }
+    .card pre {
+      background: #151B3B;        /* primary background */
+      padding: 20px;
+      margin: 0;
+      overflow-x: auto;
+      font-size: 0.95em;
+      line-height: 1.4;
+      color: #fff;
+    }
+
+    /* Button */
+    .button {
+      display: inline-block;
+      background: #5DADE2;        /* accent blue */
+      color: #fff;
+      text-decoration: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      border: 2px solid #5DADE2;  /* border blue */
+      transition: background 0.2s, border-color 0.2s;
+      font-size: 1em;
+    }
+    .button:hover {
+      background: #4AA7D6;
+      border-color: #4AA7D6;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+
+    <!-- Page Title -->
+    <h1>{{ title }}</h1>
+
+    <!-- Optional Success / Warning -->
+    {% if success_message %}
+      <div class="success-message">
+        {{ success_message }}
+      </div>
+    {% endif %}
+
+    <!-- Your Submission Card -->
+    <div class="card">
+      <h3>Your last submission:</h3>
+      <pre>
+{% if user_fix.startswith('-- Type your fixed') %}
+{% set cleaned = user_fix.split('\n', 2)[-1].strip() %}
+{{ cleaned }}
+{% else %}
+{{ user_fix }}
+{% endif %}
+      </pre>
+    </div>
+
+    <!-- Correct Solution Card -->
+    <div class="card">
+      <h3>Correct, parameterized solution:</h3>
+      <pre>{{ correct }}</pre>
+    </div>
+
+    <!-- Continue Button -->
+    <div style="text-align: center;">
+      <a class="button" href="{{ url_for('play_attack', attack_id=next_id) }}">Continue to next challenge</a>
+    </div>
+
+  </div>
+</body>
+</html>

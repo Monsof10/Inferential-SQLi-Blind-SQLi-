@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Final Score</title>
+  <style>
+    body {
+      background-color: #151B3B;    /* primary background */
+      color: #fff;                  /* primary text */
+      font-family: sans-serif;
+      text-align: center;
+      padding: 50px;
+    }
+    .score-box {
+      background-color: #1a2147;    /* secondary background */
+      padding: 30px;
+      border-radius: 10px;
+      display: inline-block;
+      box-shadow: 0 0 20px rgba(0,0,0,0.4);
+      border: 2px solid #5DADE2;    /* border blue */
+    }
+    h1 {
+      margin-bottom: 20px;
+      color: #5DADE2;               /* accent blue for headings */
+    }
+    .score {
+      font-size: 2em;
+      margin: 10px 0;
+      color: #fff;                  /* primary text */
+    }
+    .status {
+      font-size: 1.2em;
+      margin-top: 10px;
+      color: #888;                  /* secondary text */
+    }
+    a.button {
+      display: inline-block;
+      margin-top: 20px;
+      background-color: #5DADE2;    /* accent blue */
+      color: #fff;                  /* primary text */
+      padding: 10px 20px;
+      border-radius: 6px;
+      text-decoration: none;
+      border: 2px solid #5DADE2;    /* border blue */
+    }
+    a.button:hover {
+      background-color: #4AA7D6;
+      border-color: #4AA7D6;
+    }
+    /* specific styles based on result */
+    .perfect {
+      color: #5DADE2;               /* accent blue for highlights */
+    }
+    .good {
+      color: #F1C40F;               /* warning yellow for minor issues */
+    }
+    .bad {
+      color: #F1C40F;               /* warning yellow for serious issues */
+    }
+    .terrible {
+      color: #F1C40F;               /* warning yellow for critical failure */
+    }
+  </style>
+</head>
+<body>
+  <div class="score-box">
+    {% if score == total %}
+      <h1 class="perfect">🎉 All Clear! 🎉</h1>
+      <p class="score perfect">You successfully defended {{ score }} out of {{ total }} attacks.</p>
+      <p class="status perfect">✅ The database is now fully secured. Outstanding job, cybersecurity expert!</p>
+
+    {% elif score >= 4 %}
+      <h1 class="good">Good Job!</h1>
+      <p class="score good">You successfully defended {{ score }} out of {{ total }} attacks.</p>
+      <p class="status good">⚠️ The database is mostly safe, but minor vulnerabilities remain. Keep practicing!</p>
+
+    {% elif score >= 1 %}
+      <h1 class="bad">Database Severely Compromised</h1>
+      <p class="score bad">You successfully defended {{ score }} out of {{ total }} attacks.</p>
+      <p class="status bad">❗ Serious weaknesses have been exploited. Immediate patching is needed!</p>
+
+    {% else %}
+      <h1 class="terrible">Database Hacked!</h1>
+      <p class="score terrible">You successfully defended {{ score }} out of {{ total }} attacks.</p>
+      <p class="status terrible">❌ The database was completely hacked. Better luck next time!</p>
+    {% endif %}
+
+    <a class="button" href="/">Try Again</a>
+  </div>
+</body>
+</html>
